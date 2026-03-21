@@ -94,6 +94,7 @@ python3 -m http.server 3002
 # Terminal 3
 python3 -m http.server 3003
 ```
+![BalanGol Dashboard](./assets/dashboard.png)
 
 Then add them via the dashboard or API and watch requests get distributed.
 
