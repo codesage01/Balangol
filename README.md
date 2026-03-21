@@ -1,4 +1,4 @@
-# GoLB — Go Load Balancer
+# BalanGOl — Go Load Balancer
 
 A production-style HTTP load balancer built in Go with Round Robin algorithm, real-time health checks, REST API for managing backends, and a live dashboard.
 
