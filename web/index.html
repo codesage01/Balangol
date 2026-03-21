@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GoLB — Load Balancer Dashboard</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@700;800&display=swap');
+
+  :root {
+    --bg: #080b10;
+    --surface: #0e1117;
+    --card: #131720;
+    --border: #1c2333;
+    --text: #c8d3e8;
+    --muted: #44526b;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #fff;
+  }
+  .logo span { color: var(--accent); }
+
+  .ws-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .dot.live { background:var(--green); box-shadow:0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+  .main { padding: 28px 32px; display: flex; flex-direction: column; gap: 24px; }
+
+  /* Stats row */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+  }
+  .stat-label { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .stat-value { font-size: 1.8rem; font-weight: 700; color: #fff; }
+  .stat-value.green { color: var(--green); }
+  .stat-value.red   { color: var(--red); }
+  .stat-value.blue  { color: var(--accent); }
+
+  /* Add backend */
+  .add-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+  }
+  .section-title {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .add-row { display: flex; gap: 10px; }
+  input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 9px 14px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted); }
+
+  button {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    padding: 9px 20px;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity .2s;
+  }
+  button:hover { opacity: .85; }
+  button.danger {
+    background: transparent;
+    border: 1px solid var(--red);
+    color: var(--red);
+    padding: 5px 12px;
+    font-size: 0.7rem;
+  }
+  button.danger:hover { background: rgba(239,68,68,.1); }
+
+  /* Backends table */
+  .backends-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .backends-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    padding: 10px 20px;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 20px;
+    font-size: 0.75rem;
+    border-bottom: 1px solid rgba(28,35,51,.5);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.015); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+  }
+  .badge.healthy   { background: rgba(34,197,94,.12);  color: var(--green); border: 1px solid rgba(34,197,94,.3); }
+  .badge.unhealthy { background: rgba(239,68,68,.12);  color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+
+  .url-cell { color: #7dd3fc; }
+
+  .empty-row td {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+
+  /* Log feed */
+  .log-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .log-feed {
+    height: 180px;
+    overflow-y: auto;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .log-line {
+    font-size: 0.7rem;
+    color: var(--muted);
+    animation: fadeIn .2s ease-out;
+  }
+  .log-line .ts { color: #334155; margin-right: 8px; }
+  .log-line .added  { color: var(--green); }
+  .log-line .removed{ color: var(--red); }
+  .log-line .health { color: var(--yellow); }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-2px)} to{opacity:1;transform:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Balan<span>Gol</span></div>
+  <div class="ws-status">
+    <div class="dot" id="dot"></div>
+    <span id="ws-label">Connecting...</span>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Backends</div>
+      <div class="stat-value blue" id="s-total">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Healthy</div>
+      <div class="stat-value green" id="s-healthy">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Requests</div>
+      <div class="stat-value" id="s-requests">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Errors</div>
+      <div class="stat-value red" id="s-errors">0</div>
+    </div>
+  </div>
+
+  <!-- Add Backend -->
+  <div class="add-section">
+    <div class="section-title">Add Backend Server</div>
+    <div class="add-row">
+      <input id="url-input" type="text" placeholder="http://localhost:3001" />
+      <button onclick="addBackend()">+ Add Backend</button>
+    </div>
+  </div>
+
+  <!-- Backends Table -->
+  <div class="backends-section">
+    <div class="backends-header">Backend Servers</div>
+    <table>
+      <thead>
+        <tr>
+          <th>URL</th>
+          <th>Status</th>
+          <th>Requests</th>
+          <th>Active</th>
+          <th>Errors</th>
+          <th>Added</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="backends-table">
+        <tr class="empty-row"><td colspan="7">No backends yet — add one above</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Event Log -->
+  <div class="log-section">
+    <div class="backends-header">Event Log</div>
+    <div class="log-feed" id="log-feed"></div>
+  </div>
+
+</div>
+
+<script>
+  let backends = {};
+
+  // ── REST API calls ──────────────────────────────────────
+  async function loadBackends() {
+    try {
+      const res = await fetch('/api/backends');
+      const data = await res.json();
+      backends = {};
+      (data || []).forEach(b => backends[b.id] = b);
+      renderTable();
+    } catch(e) {}
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      document.getElementById('s-total').textContent    = data.total_backends;
+      document.getElementById('s-healthy').textContent  = data.healthy_backends;
+      document.getElementById('s-requests').textContent = data.total_requests;
+      document.getElementById('s-errors').textContent   = data.total_errors;
+    } catch(e) {}
+  }
+
+  async function addBackend() {
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) return;
+    try {
+      await fetch('/api/backends', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({url})
+      });
+      document.getElementById('url-input').value = '';
+      loadBackends();
+      loadStats();
+    } catch(e) { alert('Failed to add backend'); }
+  }
+
+  async function removeBackend(id) {
+    try {
+      await fetch(`/api/backends/${id}`, {method:'DELETE'});
+      loadBackends();
+      loadStats();
+    } catch(e) {}
+  }
+
+  // ── Render ──────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('backends-table');
+    const list = Object.values(backends);
+
+    if (list.length === 0) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No backends yet — add one above</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = list.map(b => `
+      <tr>
+        <td class="url-cell">${b.url}</td>
+        <td><span class="badge ${b.status}">${b.status}</span></td>
+        <td>${b.total_requests}</td>
+        <td>${b.active_requests}</td>
+        <td>${b.total_errors}</td>
+        <td>${new Date(b.added_at).toLocaleTimeString()}</td>
+        <td><button class="danger" onclick="removeBackend('${b.id}')">Remove</button></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── WebSocket ───────────────────────────────────────────
+  function connect() {
+    const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+    const ws = new WebSocket(`${protocol}://${location.host}/ws`);
+
+    ws.onopen = () => {
+      document.getElementById('dot').className = 'dot live';
+      document.getElementById('ws-label').textContent = 'Live';
+    };
+    ws.onclose = () => {
+      document.getElementById('dot').className = 'dot';
+      document.getElementById('ws-label').textContent = 'Reconnecting...';
+      setTimeout(connect, 2000);
+    };
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      handleWSMessage(msg);
+    };
+  }
+
+  function handleWSMessage(msg) {
+    if (msg.type === 'backend_added') {
+      backends[msg.backend.id] = msg.backend;
+      renderTable();
+      addLog(`<span class="added">+ backend added</span> ${msg.backend.url}`);
+    } else if (msg.type === 'backend_removed') {
+      delete backends[msg.id];
+      renderTable();
+      addLog(`<span class="removed">- backend removed</span> id:${msg.id}`);
+    } else if (msg.type === 'health_update') {
+      if (backends[msg.id]) {
+        backends[msg.id].status = msg.status;
+        renderTable();
+      }
+      const cls = msg.status === 'healthy' ? 'added' : 'removed';
+      addLog(`<span class="${cls}">health</span> ${msg.id.slice(0,8)}... → ${msg.status}`);
+    }
+    loadStats();
+  }
+
+  function addLog(html) {
+    const feed = document.getElementById('log-feed');
+    const ts = new Date().toLocaleTimeString('en', {hour12:false});
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `<span class="ts">${ts}</span>${html}`;
+    feed.insertBefore(line, feed.firstChild);
+    if (feed.children.length > 50) feed.lastChild.remove();
+  }
+
+  // ── Enter key on input ──────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('url-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') addBackend();
+    });
+    loadBackends();
+    loadStats();
+    connect();
+    // Poll stats every 5s for request counters
+    setInterval(loadStats, 5000);
+    setInterval(loadBackends, 5000);
+  });
+</script>
+</body>
+</html>
