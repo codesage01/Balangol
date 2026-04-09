@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/yourname/loadbalancer/internal/balancer"
-	"github.com/yourname/loadbalancer/internal/models"
+	"github.com/codesage01/Balangol/internal/balancer"
+	"github.com/codesage01/Balangol/internal/models"
 )
 
 type APIHandler struct {
