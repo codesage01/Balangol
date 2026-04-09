@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/yourname/loadbalancer/internal/models"
+	"github.com/codesage01/Balangol/internal/models"
 )
 
 // Checker pings all backends on a schedule and updates their status
