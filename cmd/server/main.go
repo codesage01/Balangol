@@ -6,15 +6,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/yourname/loadbalancer/internal/balancer"
-	"github.com/yourname/loadbalancer/internal/health"
-	"github.com/yourname/loadbalancer/internal/proxy"
-	"github.com/yourname/loadbalancer/internal/server"
+	"github.com/codesage01/Balangol/internal/balancer"
+	"github.com/codesage01/Balangol/internal/health"
+	"github.com/codesage01/Balangol/internal/proxy"
+	"github.com/codesage01/Balangol/internal/server"
 )
 
 func main() {
-	lbPort := getEnv("LB_PORT", ":8080")   // load balancer port
-	apiPort := getEnv("API_PORT", ":9090")  // admin API + dashboard port
+	port := getEnv("PORT", "8080") // admin API + dashboard port
 
 	// Setup round robin balancer and backend registry
 	rr := balancer.NewRoundRobin()
