@@ -4,7 +4,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/yourname/loadbalancer/internal/models"
+	"github.com/codesage01/Balangol/internal/models"
 )
 
 // RoundRobin cycles through healthy backends in order
