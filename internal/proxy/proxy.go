@@ -6,8 +6,8 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	"github.com/yourname/loadbalancer/internal/balancer"
-	"github.com/yourname/loadbalancer/internal/models"
+	"github.com/codesage01/Balangol/internal/balancer"
+	"github.com/codesage01/Balangol/internal/models"
 )
 
 // Proxy forwards incoming requests to the next healthy backend
