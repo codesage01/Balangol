@@ -1,4 +1,4 @@
-module github.com/yourname/loadbalancer
+module github.com/codesage01/Balangol
 
 go 1.22
 
