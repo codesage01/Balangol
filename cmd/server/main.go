@@ -13,7 +13,11 @@ import (
 )
 
 func main() {
-	port := getEnv("PORT", "8080") // admin API + dashboard port
+	// 1. Define the ports properly
+	// Vercel usually provides a PORT env, but since you need two ports, 
+	// we will define them clearly here.
+	lbPort  := ":" + getEnv("PORT", "8080")    // Load Balancer Port
+	apiPort := ":" + getEnv("API_PORT", "9090") // Admin/Dashboard Port
 
 	// Setup round robin balancer and backend registry
 	rr := balancer.NewRoundRobin()
@@ -27,17 +31,16 @@ func main() {
 	checker := health.NewChecker(registry, 10*time.Second, hub.Broadcast)
 	go checker.Run()
 
-	// --- Load Balancer Server (port 8080) ---
-	// All traffic here gets forwarded to a healthy backend
+	// --- Load Balancer Server ---
 	lbProxy := proxy.NewProxy(registry)
 	go func() {
 		log.Printf("Load Balancer listening on %s", lbPort)
 		if err := http.ListenAndServe(lbPort, lbProxy); err != nil {
-			log.Fatal(err)
+			log.Fatalf("Load Balancer failed: %v", err)
 		}
 	}()
 
-	// --- Admin API + Dashboard Server (port 9090) ---
+	// --- Admin API + Dashboard Server ---
 	mux := http.NewServeMux()
 
 	apiHandler := server.NewAPIHandler(registry, hub)
@@ -55,9 +58,9 @@ func main() {
 	// Dashboard UI
 	mux.Handle("/", http.FileServer(http.Dir("./web")))
 
-	log.Printf("Admin Dashboard on %s", apiPort)
+	log.Printf("Admin Dashboard listening on %s", apiPort)
 	if err := http.ListenAndServe(apiPort, mux); err != nil {
-		log.Fatal(err)
+		log.Fatalf("Admin Server failed: %v", err)
 	}
 }
 
