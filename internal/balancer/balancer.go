@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/yourname/loadbalancer/internal/models"
+	"github.com/codesage01/Balangol/internal/models"
 )
 
 var ErrNoHealthyBackend = errors.New("no healthy backend available")
